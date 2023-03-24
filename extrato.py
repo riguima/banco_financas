@@ -34,7 +34,3 @@ def get_transacoes_cached(conta, conn):
         last_transaction_date = None
 
     return transacoes
-
-
-def extrato(contas, conn):
-    conn.close()

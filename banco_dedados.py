@@ -2,6 +2,10 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import Column, Integer, String, DateTime, Float
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 Base = declarative_base()
 
@@ -24,7 +28,7 @@ class Transacao(Base):
     conta = Column(String(50))
 
 # Cria a conexão com o banco de dados usando o SQLAlchemy
-engine = create_engine('mysql+mysqlconnector://root:bancof@localhost/bfinancas_sql')
+engine = create_engine(os.getenv('DATABASE_URI'))
 Session = sessionmaker(bind=engine)
 
 # Cria as tabelas se elas ainda não existirem

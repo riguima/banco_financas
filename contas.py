@@ -56,7 +56,7 @@ class ContaPadrao:
             print(f"{locale.currency(valor, grouping=True)} adicionados na conta '{conta}'")
             session.commit()
 
-    def ver_extrato(self, conta, coon):
+    def ver_extrato(self, conta):
         data_atual = datetime.datetime.now()
         data_limite = data_atual - datetime.timedelta(days=30)
         transacoes = get_transacoes_cached(conta, self.conn)

@@ -39,12 +39,11 @@ def main():
         opcao = mostrar_menu('Ver extrato', [*contas, 'Voltar ao menu anterior'], 'Escolha uma conta: ')
         if opcao != 'Voltar ao menu anterior':
             classe = obter_classe(opcao)
-            conta = classe.obter_conta(opcao, conexao)
             period = mostrar_menu('Ver extrato',
                                   ['Últimas 5 transações', 'Buscar por período', 'Voltar ao menu anterior'],
                                   'Escolha uma opção: ')
             if period == 'Últimas 5 transações':
-                conta.ver_extrato_ultimas_transacoes()
+                classe.ver_extrato(opcao)
             elif period == 'Buscar por período':
                 inicio = input('Digite a data de início (DD/MM/AAAA): ')
                 fim = input('Digite a data de fim (DD/MM/AAAA): ')
@@ -52,19 +51,18 @@ def main():
     elif opcao == 'Adicionar conta':
         while True:
             conta = input('Digite o nome da conta (ou pressione enter para voltar): ')
-            if not conta:
-                break
-            if len(conta) < 3:
+            if len(conta) <= 3:
                 print('O nome da conta deve ter pelo menos 3 caracteres.')
                 continue
             if conta in contas:
                 print('Essa conta já existe. Por favor, digite outro nome.')
                 continue
-            contas.append(conta)
+            with Session() as session:
+                conta_model = Conta(conta=conta, saldo=0)
+                session.add(conta_model)
+                session.commit()
             print(f'Conta "{conta}" adicionada com sucesso!')
             break
-        else:
-            print('Voltando para o menu principal...')
     elif opcao == 'Remover conta':
         opcao = mostrar_menu('Remover conta', [*contas, 'Voltar ao menu anterior'], 'Escolha uma conta: ')
         if opcao != 'Voltar ao menu anterior':
