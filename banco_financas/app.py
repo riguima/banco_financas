@@ -3,6 +3,8 @@ from actions import AddMoney, AddAccount, RemoveAccount, Extract
 import sys
 
 
+
+
 class App(QtWidgets.QWidget):
 
     def __init__(self):

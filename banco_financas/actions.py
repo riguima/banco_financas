@@ -1,4 +1,6 @@
 from PySide6 import QtWidgets, QtGui, QtCore
+from database import Session
+from models import Account, Client, Transaction
 
 
 class AddMoney(QtWidgets.QWidget):
@@ -18,7 +20,14 @@ class AddMoney(QtWidgets.QWidget):
 
     @QtCore.Slot()
     def add_money(self):
-        pass
+        with Session() as session:
+            account = session.query(Account).filter_by(
+                client_name=get_current_client().name
+            ).get(self.input_account.currentText())
+            account.transactions.append(Transaction(
+                value=float(self.input_value.text().replace(',', '.'))
+            ))
+            session.commit()
 
 
 class ExtractModel(QtCore.QAbstractTableModel):
@@ -60,6 +69,7 @@ class AddAccount(QtWidgets.QWidget):
 
     def __init__(self):
         super().__init__()
+        self.message_box = QtWidgets.QMessageBox()
         self.input = QtWidgets.QLineEdit()
         self.button = QtWidgets.QPushButton('Adicionar conta')
         self.button.clicked.connect(self.add_account)
@@ -70,13 +80,19 @@ class AddAccount(QtWidgets.QWidget):
 
     @QtCore.Slot()
     def add_account(self):
-        pass
+        with Session() as session:
+            client = get_current_client()
+            client.accounts.append(Account(name=self.input.text()))
+            session.commit()
+        self.message_box.setText(f'Conta {self.input.text()} Adicionada')
+        self.message_box.show()
 
 
 class RemoveAccount(QtWidgets.QWidget):
 
     def __init__(self):
         super().__init__()
+        self.message_box = QtWidgets.QMessageBox()
         self.input = QtWidgets.QComboBox()
         self.button = QtWidgets.QPushButton('Remover conta')
         self.button.clicked.connect(self.remove_account)
@@ -87,4 +103,11 @@ class RemoveAccount(QtWidgets.QWidget):
 
     @QtCore.Slot()
     def remove_account(self):
-        pass
+        with Session() as session:
+            account = session.query(Account).filter_by(
+                client_name=get_current_client().name
+            ).get(self.input.currentText())
+            session.delete(account)
+            session.commit()
+        self.message_box.setText(f'Conta {self.input.currentText()} Removida')
+        self.message_box.show()
