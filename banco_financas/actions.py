@@ -1,22 +1,27 @@
 from PySide6 import QtWidgets, QtGui, QtCore
+
 from database import Session
+from domain import get_current_client
 from models import Account, Client, Transaction
+from components import ChooseAccount, HLayout
 
 
-class AddMoney(QtWidgets.QWidget):
+class AddMoney(ChooseAccount):
 
     def __init__(self):
         super().__init__()
-        self.input_account = QtWidgets.QComboBox()
-        self.input_value = QtWidgets.QLineEdit()
-        self.input_value.setValidator(QtGui.QDoubleValidator())
-        self.button = QtWidgets.QPushButton('Adicionar dinheiro')
+        self.setFixedSize(250, 200)
+        self.message_box = QtWidgets.QMessageBox()
+
+        self.button.setText('Adicionar dinheiro')
         self.button.clicked.connect(self.add_money)
 
-        self.layout = QtWidgets.QVBoxLayout(self)
-        self.layout.addWidget(self.input_account)
-        self.layout.addWidget(self.input_value)
-        self.layout.addWidget(self.button)
+        self.value_text = QtWidgets.QLabel('Valor')
+        self.input_value = QtWidgets.QLineEdit()
+        self.input_value.setValidator(QtGui.QDoubleValidator())
+        self.input_value_layout = HLayout(self.value_text, self.input_value)
+
+        self.layout.addLayout(self.input_value_layout)
 
     @QtCore.Slot()
     def add_money(self):
@@ -28,6 +33,9 @@ class AddMoney(QtWidgets.QWidget):
                 value=float(self.input_value.text().replace(',', '.'))
             ))
             session.commit()
+            self.message_box.setText(f'Transação de R${self.input_value.text()} realizada!')
+            self.message_box.show()
+            self.close()
 
 
 class ExtractModel(QtCore.QAbstractTableModel):
@@ -88,26 +96,23 @@ class AddAccount(QtWidgets.QWidget):
         self.message_box.show()
 
 
-class RemoveAccount(QtWidgets.QWidget):
+class RemoveAccount(ChooseAccount):
 
     def __init__(self):
         super().__init__()
+        self.setFixedSize(250, 150)
         self.message_box = QtWidgets.QMessageBox()
-        self.input = QtWidgets.QComboBox()
-        self.button = QtWidgets.QPushButton('Remover conta')
+        self.button.setText('Remover conta')
         self.button.clicked.connect(self.remove_account)
-
-        self.layout = QtWidgets.QVBoxLayout(self)
-        self.layout.addWidget(self.input)
-        self.layout.addWidget(self.button)
 
     @QtCore.Slot()
     def remove_account(self):
         with Session() as session:
             account = session.query(Account).filter_by(
                 client_name=get_current_client().name
-            ).get(self.input.currentText())
+            ).get(self.input_account.currentText())
             session.delete(account)
             session.commit()
-        self.message_box.setText(f'Conta {self.input.currentText()} Removida')
+        self.message_box.setText(f'Conta {self.input_account.currentText()} Removida')
         self.message_box.show()
+        self.close()

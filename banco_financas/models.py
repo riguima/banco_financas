@@ -20,7 +20,7 @@ class Account(Base):
     __tablename__ = 'accounts'
     name = Column(String, primary_key=True, nullable=False)
     client_name = Column(String, ForeignKey('clients.name'))
-    client = relationship('Client', back_populates='account')
+    client = relationship('Client', back_populates='accounts')
     source_of_income = Column(String, nullable=True)
     transactions = relationship('Transaction', back_populates='account')
 
