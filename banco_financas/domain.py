@@ -1,10 +1,10 @@
 from PySide6 import QtWidgets
 from importlib import import_module
 import inspect
-import datetime
-from database import Session
-from models import Account, Transaction
 from datetime import datetime, date
+
+from database import Session
+from models import Account, Transaction, Client
 
 
 class DefaultAccount(QtWidgets.QWidget):
@@ -25,10 +25,9 @@ class DefaultAccount(QtWidgets.QWidget):
             ).filter(start_date <= Transaction.date <= end_date).all()
 
 
-def get_current_client():
-    with Session() as session:
-        with open('current_client.txt', 'r') as f:
-            return session.query(Client).get(f.readlines()[0])
+def get_current_client(session):
+    with open('current_client.txt', 'r') as f:
+        return session.query(Client).get(f.readlines()[0])
 
 
 def get_widget(account_name: str) -> DefaultAccount:

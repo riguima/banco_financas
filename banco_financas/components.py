@@ -19,21 +19,40 @@ class HLayout(QtWidgets.QHBoxLayout):
         self.addWidget(input)
 
 
-class ChooseAccount(QtWidgets.QWidget):
+class BaseWidget(QtWidgets.QWidget):
 
     def __init__(self):
         super().__init__()
         self.setStyleSheet('font-size: 20px')
-        self.account_text = QtWidgets.QLabel('Conta')
-        self.input_account = QtWidgets.QComboBox()
-        self.input_account.addItems([a.name for a in get_current_client().accounts])
-        self.input_account_layout = HLayout(self.account_text, self.input_account)
-
-        self.button = Button()
-
+        self.back_button = Button('Voltar')
+        self.back_button.clicked.connect(self.close)
         self.layout = QtWidgets.QVBoxLayout(self)
-        self.layout.addLayout(self.input_account_layout)
 
     def show(self):
         super().show()
+        self.layout.addWidget(self.back_button)
+
+
+class ChooseAccount(BaseWidget):
+
+    def __init__(self):
+        super().__init__()
+        self.account_text = QtWidgets.QLabel('Conta')
+        self.input_account = QtWidgets.QComboBox()
+        self.input_account_layout = HLayout(self.account_text, self.input_account)
+
+        self.button = Button()
+        self.back_button = Button('Voltar')
+        self.back_button.clicked.connect(self.close)
+
+        self.layout.addLayout(self.input_account_layout)
+
+    def update_input_account_items(self):
+        self.input_account.clear()
+        with Session() as session:
+            self.input_account.addItems([a.name for a in get_current_client(session).accounts])
+
+    def show(self):
+        self.update_input_account_items()
         self.layout.addWidget(self.button)
+        super().show()

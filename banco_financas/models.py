@@ -13,7 +13,7 @@ class Client(Base):
     __tablename__ = 'clients'
     name = Column(String, primary_key=True, nullable=False)
     password = Column(String, nullable=False)
-    accounts = relationship('Account', back_populates='client')
+    accounts = relationship('Account', lazy=True, back_populates='client')
 
 
 class Account(Base):

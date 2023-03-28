@@ -1,9 +1,10 @@
 from PySide6 import QtWidgets, QtGui, QtCore
+from datetime import datetime
 
 from database import Session
 from domain import get_current_client
-from models import Account, Client, Transaction
-from components import ChooseAccount, HLayout
+from models import Account, Transaction
+from components import ChooseAccount, HLayout, Button, BaseWidget
 
 
 class AddMoney(ChooseAccount):
@@ -27,8 +28,8 @@ class AddMoney(ChooseAccount):
     def add_money(self):
         with Session() as session:
             account = session.query(Account).filter_by(
-                client_name=get_current_client().name
-            ).get(self.input_account.currentText())
+                client_name=get_current_client(session).name
+            ).filter_by(name=self.input_account.currentText()).first()
             account.transactions.append(Transaction(
                 value=float(self.input_value.text().replace(',', '.'))
             ))
@@ -47,7 +48,10 @@ class ExtractModel(QtCore.QAbstractTableModel):
 
     def data(self, index, role=QtCore.Qt.ItemDataRole.DisplayRole):
         if role == QtCore.Qt.ItemDataRole.DisplayRole:
-            return self._data[index.row(), index.column()]
+            return self._data[index.row()][index.column()]
+
+    def set_data(self, data):
+        self._data = data
 
     def headerData(self, section, orientation, role):
         if orientation == QtCore.Qt.Orientation.Horizontal and role == QtCore.Qt.ItemDataRole.DisplayRole:
@@ -60,40 +64,58 @@ class ExtractModel(QtCore.QAbstractTableModel):
         return len(self._data[0])
 
 
-class Extract(QtWidgets.QWidget):
+class Extract(ChooseAccount):
 
     def __init__(self):
         super().__init__()
-        self.input = QtWidgets.QLineEdit()
+        self.setFixedSize(350, 500)
         self.transactions_table = QtWidgets.QTableView()
-        self.transactions_table.setModel(ExtractModel([['teste']], ['Transacao']))
+        self.transactions_table.setModel(ExtractModel([['', '']], ['Valor', 'Data']))
+        self.transactions_table.setColumnWidth(0, 200)
+        self.transactions_table.setColumnWidth(1, 122)
+        self.button.setText('Mostrar extrato')
+        self.button.clicked.connect(self.show_extract)
 
-        self.layout = QtWidgets.QVBoxLayout(self)
-        self.layout.addWidget(self.input)
         self.layout.addWidget(self.transactions_table)
 
+    def show_extract(self) -> None:
+        with Session() as session:
+            account = session.query(Account).filter_by(
+                client_name=get_current_client(session).name
+            ).filter_by(name=self.input_account.currentText()).first()
+            if account:
+                data = []
+                for t in account.transactions:
+                    data.append([f'R${t.value:.2f}'.replace('.', ','),
+                                 datetime.strftime(t.date, '%d/%m/%Y')])
+                self.transactions_table.model().set_data(data if data else [['', '']])
 
-class AddAccount(QtWidgets.QWidget):
+
+class AddAccount(BaseWidget):
 
     def __init__(self):
         super().__init__()
+        self.setFixedSize(250, 150)
         self.message_box = QtWidgets.QMessageBox()
-        self.input = QtWidgets.QLineEdit()
-        self.button = QtWidgets.QPushButton('Adicionar conta')
+        self.name_text = QtWidgets.QLabel('Nome')
+        self.input_name = QtWidgets.QLineEdit()
+        self.input_name_layout = HLayout(self.name_text, self.input_name)
+
+        self.button = Button('Adicionar conta')
         self.button.clicked.connect(self.add_account)
 
-        self.layout = QtWidgets.QVBoxLayout(self)
-        self.layout.addWidget(self.input)
+        self.layout.addLayout(self.input_name_layout)
         self.layout.addWidget(self.button)
 
     @QtCore.Slot()
     def add_account(self):
         with Session() as session:
-            client = get_current_client()
-            client.accounts.append(Account(name=self.input.text()))
+            client = get_current_client(session)
+            client.accounts.append(Account(name=self.input_name.text()))
             session.commit()
-        self.message_box.setText(f'Conta {self.input.text()} Adicionada')
+        self.message_box.setText(f'Conta {self.input_name.text()} Adicionada')
         self.message_box.show()
+        self.close()
 
 
 class RemoveAccount(ChooseAccount):
@@ -109,10 +131,11 @@ class RemoveAccount(ChooseAccount):
     def remove_account(self):
         with Session() as session:
             account = session.query(Account).filter_by(
-                client_name=get_current_client().name
-            ).get(self.input_account.currentText())
+                client_name=get_current_client(session).name
+            ).filter_by(name=self.input_account.currentText()).first()
             session.delete(account)
             session.commit()
         self.message_box.setText(f'Conta {self.input_account.currentText()} Removida')
         self.message_box.show()
+        self.update_input_account_items()
         self.close()
