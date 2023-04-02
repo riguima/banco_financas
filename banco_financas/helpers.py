@@ -56,3 +56,8 @@ class ChooseAccount(BaseWidget):
         self.update_input_account_items()
         self.layout.addWidget(self.button)
         super().show()
+
+
+def create_widget_button(text: str, widget: QtWidgets.QWidget):
+    button = Button('Adicionar dinheiro')
+    button.clicked.connect(widget.show)

@@ -1,8 +1,8 @@
 from PySide6 import QtWidgets, QtCore
-from actions import AddMoney, AddAccount, RemoveAccount, Extract
+from widgets.default import AddMoney, AddAccount, RemoveAccount, Extract
 import sys
 
-from components import Button, HLayout
+from helpers import create_widget_button, Button, HLayout
 from database import Session
 from models import Client
 
@@ -13,22 +13,15 @@ class Main(QtWidgets.QWidget):
         super().__init__()
         self.setStyleSheet('font-size: 20px')
         self.setFixedSize(250, 300)
-        self.add_money = AddMoney()
         self.message_box = QtWidgets.QMessageBox()
-        self.add_money_button = Button('Adicionar dinheiro')
-        self.add_money_button.clicked.connect(self.add_money.show)
-
-        self.extract = Extract()
-        self.show_extract_button = Button('Ver extrato')
-        self.show_extract_button.clicked.connect(self.extract.show)
-
-        self.add_account = AddAccount()
-        self.add_account_button = Button('Adicionar conta')
-        self.add_account_button.clicked.connect(self.add_account.show)
-
-        self.remove_account = RemoveAccount()
-        self.remove_account_button = Button('Remover conta')
-        self.remove_account_button.clicked.connect(self.remove_account.show)
+        self.add_money_button = create_widget_button('Adicionar dinheiro',
+                                                     AddMoney())
+        self.show_extract_button = create_widget_button('Ver extrato',
+                                                        Extract())
+        self.add_account_button = create_widget_button('Adicionar conta',
+                                                       AddAccount())
+        self.remove_account_button = create_widget_button('Remover conta',
+                                                          RemoveAccount())
 
         self.finalize_transactions_button = Button('Finalizar transações')
         self.finalize_transactions_button.clicked.connect(self.finalize_transactions)
@@ -86,7 +79,7 @@ class Login(QtWidgets.QWidget):
             else:
                 self.message_box.setText('Usuário ou senha incorretos!')
                 self.message_box.show()
-    
+
     @QtCore.Slot()
     def register(self):
         with Session() as session:
