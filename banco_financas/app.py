@@ -1,8 +1,8 @@
 from PySide6 import QtWidgets, QtCore
-from widgets.default import AddMoney, AddAccount, RemoveAccount, Extract
+from widgets.default import AddAccount
 import sys
 
-from helpers import create_widget_button, Button, HLayout
+from helpers import Button, HLayout, ChooseAccount
 from database import Session
 from models import Client
 
@@ -12,25 +12,21 @@ class Main(QtWidgets.QWidget):
     def __init__(self):
         super().__init__()
         self.setStyleSheet('font-size: 20px')
-        self.setFixedSize(250, 300)
+        self.setFixedSize(250, 150)
         self.message_box = QtWidgets.QMessageBox()
-        self.add_money_button = create_widget_button('Adicionar dinheiro',
-                                                     AddMoney())
-        self.show_extract_button = create_widget_button('Ver extrato',
-                                                        Extract())
-        self.add_account_button = create_widget_button('Adicionar conta',
-                                                       AddAccount())
-        self.remove_account_button = create_widget_button('Remover conta',
-                                                          RemoveAccount())
+        self.accounts = ChooseAccount()
+        self.accounts_button = Button('Contas')
+        self.accounts_button.clicked.connect(self.accounts.show)
 
+        self.add_account = AddAccount()
+        self.add_account_button = Button('Adicionar conta')
+        self.add_account_button.clicked.connect(self.add_account.show)
         self.finalize_transactions_button = Button('Finalizar transações')
-        self.finalize_transactions_button.clicked.connect(self.finalize_transactions)
-
+        self.finalize_transactions_button.clicked.connect(
+            self.finalize_transactions)
         self.layout = QtWidgets.QVBoxLayout(self)
-        self.layout.addWidget(self.add_money_button)
-        self.layout.addWidget(self.show_extract_button)
+        self.layout.addWidget(self.accounts_button)
         self.layout.addWidget(self.add_account_button)
-        self.layout.addWidget(self.remove_account_button)
         self.layout.addWidget(self.finalize_transactions_button)
 
     @QtCore.Slot()

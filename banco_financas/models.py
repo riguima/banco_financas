@@ -21,7 +21,6 @@ class Account(Base):
     name = Column(String, primary_key=True, nullable=False)
     client_name = Column(String, ForeignKey('clients.name'))
     client = relationship('Client', back_populates='accounts')
-    source_of_income = Column(String, nullable=True)
     transactions = relationship('Transaction', back_populates='account')
 
 
@@ -32,6 +31,7 @@ class Transaction(Base):
     value = Column(Float, nullable=False)
     account_name = Column(String, ForeignKey('accounts.name'))
     account = relationship('Account', back_populates='transactions')
+    source_of_income = Column(String, nullable=True)
 
 
 Base.metadata.create_all(db)

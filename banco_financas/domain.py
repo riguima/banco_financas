@@ -5,6 +5,7 @@ from datetime import datetime, date
 
 from database import Session
 from models import Account, Transaction, Client
+from widgets import default
 
 
 class DefaultAccount(QtWidgets.QWidget):
@@ -30,12 +31,16 @@ def get_current_client(session):
         return session.query(Client).get(f.readlines()[0])
 
 
-def get_widget(account_name: str) -> DefaultAccount:
+def get_action_widget(account_name: str, action: str,
+                      parent: QtWidgets.QWidget):
     try:
         module = import_module(f'widgets.{account_name.lower()}')
         for _, obj in inspect.getmembers(module):
-            if inspect.isclass(obj) and obj in DefaultAccount.__subclasses__():
-                return obj()
+            if inspect.isclass(obj) and obj.__name__ == action.title().replace(' ', ''):
+                return obj(account_name, parent)
     except ModuleNotFoundError:
         pass
-    return DefaultAccount()
+    module = import_module('widgets.default')
+    for _, obj in inspect.getmembers(module):
+        if inspect.isclass(obj) and obj.__name__ == action.title().replace(' ', ''):
+            return obj(account_name, parent)
