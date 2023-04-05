@@ -7,13 +7,13 @@ from models import Account, Transaction
 from helpers import HLayout, Button, BaseWidget
 
 
-class AdicionarDinheiro(QtWidgets.QWidget):
+class AdicionarDinheiro(BaseWidget):
 
     def __init__(self, account_name: str, parent: QtWidgets.QWidget):
         super().__init__()
         self.parent = parent
         self.account_name = account_name
-        self.setFixedSize(250, 200)
+        self.setFixedSize(250, 150)
         self.message_box = QtWidgets.QMessageBox()
 
         self.value_text = QtWidgets.QLabel('Valor')
@@ -24,7 +24,6 @@ class AdicionarDinheiro(QtWidgets.QWidget):
         self.button = Button('Adicionar dinheiro')
         self.button.clicked.connect(self.add_money)
 
-        self.layout = QtWidgets.QVBoxLayout(self)
         self.layout.addLayout(self.input_value_layout)
         self.layout.addWidget(self.button)
 
@@ -69,27 +68,60 @@ class ExtractModel(QtCore.QAbstractTableModel):
         return len(self._data[0])
 
 
-class VerExtrato(QtWidgets.QWidget):
+class VerExtrato(BaseWidget):
 
     def __init__(self, account_name: str, parent: QtWidgets.QWidget) -> None:
         super().__init__()
         self.parent = parent
         self.account_name = account_name
-        self.setFixedSize(350, 500)
+        self.setFixedSize(380, 500)
+
+        self.label_start_date = QtWidgets.QLabel('Data inicial')
+        self.input_start_date = QtWidgets.QDateEdit()
+        self.input_start_date.setDisplayFormat('dd/MM/yyyy')
+        self.layout_start_date = HLayout(self.label_start_date,
+                                         self.input_start_date)
+
+        self.label_final_date = QtWidgets.QLabel('Data final')
+        self.input_final_date = QtWidgets.QDateEdit()
+        self.input_final_date.setDisplayFormat('dd/MM/yyyy')
+        self.layout_final_date = HLayout(self.label_final_date,
+                                         self.input_final_date)
 
         self.transactions_table = QtWidgets.QTableView()
         self.transactions_table.setModel(
             ExtractModel([['', '']], ['Valor', 'Data']))
         self.transactions_table.setColumnWidth(0, 200)
-        self.transactions_table.setColumnWidth(1, 122)
+        self.transactions_table.setColumnWidth(1, 152)
 
-        self.button = Button('Mostrar extrato')
-        self.button.clicked.connect(self.show_extract)
+        self.button_filter = Button('Filtrar')
+        self.button_filter.clicked.connect(self.filter)
 
-        self.layout = QtWidgets.QVBoxLayout(self)
+        self.button_show_extract = Button('Mostrar extrato')
+        self.button_show_extract.clicked.connect(self.show_extract)
+
+        self.layout.addLayout(self.layout_start_date)
+        self.layout.addLayout(self.layout_final_date)
         self.layout.addWidget(self.transactions_table)
-        self.layout.addWidget(self.button)
+        self.layout.addWidget(self.button_filter)
+        self.layout.addWidget(self.button_show_extract)
 
+    @QtCore.Slot()
+    def filter(self) -> None:
+        with Session() as session:
+            account = session.query(Account).filter_by(
+                client_name=get_current_client(session).name
+            ).filter_by(name=self.account_name).first()
+            if account:
+                data = []
+                for t in account.transactions:
+                    if self.input_final_date.date() >= t.date >= self.input_start_date.date():
+                        data.append([f'R${t.value:.2f}'.replace('.', ','),
+                                     datetime.strftime(t.date, '%d/%m/%Y')])
+                self.transactions_table.model().set_data(
+                    data if data else [['', '']])
+
+    @QtCore.Slot()
     def show_extract(self) -> None:
         with Session() as session:
             account = session.query(Account).filter_by(
