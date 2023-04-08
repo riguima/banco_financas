@@ -1,9 +1,8 @@
 from PySide6 import QtWidgets, QtGui, QtCore
 from datetime import datetime
 
+from repositories import AccountRepository
 from database import Session
-from domain import get_current_client
-from models import Account, Transaction
 from helpers import HLayout, Button, BaseWidget
 
 
@@ -29,18 +28,14 @@ class AdicionarDinheiro(BaseWidget):
 
     @QtCore.Slot()
     def add_money(self):
-        with Session() as session:
-            account = session.query(Account).filter_by(
-                client_name=get_current_client(session).name
-            ).filter_by(name=self.account_name).first()
-            account.transactions.append(Transaction(
-                value=float(self.input_value.text().replace(',', '.'))
-            ))
-            session.commit()
-            self.message_box.setText(
-                f'Transação de R${self.input_value.text()} realizada!')
-            self.message_box.show()
-            self.close()
+        AccountRepository().make_transaction(
+            self.account_name,
+            value=float(self.input_value.text().replace(',', '.')),
+        )
+        self.message_box.setText(
+            f'Transação de R${self.input_value.text()} realizada!')
+        self.message_box.show()
+        self.close()
 
 
 class ExtractModel(QtCore.QAbstractTableModel):
@@ -94,46 +89,26 @@ class VerExtrato(BaseWidget):
         self.transactions_table.setColumnWidth(0, 200)
         self.transactions_table.setColumnWidth(1, 152)
 
-        self.button_filter = Button('Filtrar')
-        self.button_filter.clicked.connect(self.filter)
-
         self.button_show_extract = Button('Mostrar extrato')
         self.button_show_extract.clicked.connect(self.show_extract)
 
         self.layout.addLayout(self.layout_start_date)
         self.layout.addLayout(self.layout_final_date)
         self.layout.addWidget(self.transactions_table)
-        self.layout.addWidget(self.button_filter)
         self.layout.addWidget(self.button_show_extract)
 
     @QtCore.Slot()
-    def filter(self) -> None:
-        with Session() as session:
-            account = session.query(Account).filter_by(
-                client_name=get_current_client(session).name
-            ).filter_by(name=self.account_name).first()
-            if account:
-                data = []
-                for t in account.transactions:
-                    if self.input_final_date.date() >= t.date >= self.input_start_date.date():
-                        data.append([f'R${t.value:.2f}'.replace('.', ','),
-                                     datetime.strftime(t.date, '%d/%m/%Y')])
-                self.transactions_table.model().set_data(
-                    data if data else [['', '']])
-
-    @QtCore.Slot()
     def show_extract(self) -> None:
-        with Session() as session:
-            account = session.query(Account).filter_by(
-                client_name=get_current_client(session).name
-            ).filter_by(name=self.account_name).first()
-            if account:
-                data = []
-                for t in account.transactions:
-                    data.append([f'R${t.value:.2f}'.replace('.', ','),
-                                 datetime.strftime(t.date, '%d/%m/%Y')])
-                self.transactions_table.model().set_data(
-                    data if data else [['', '']])
+        transactions = AccountRepository().get_transactions(
+            self.account_name, self.input_start_date.date(),
+            self.input_final_date.date()
+        )
+        data = []
+        for t in transactions:
+            data.append([f'R${t.value:.2f}'.replace('.', ','),
+                         datetime.strftime(t.date, '%d/%m/%Y')])
+        self.transactions_table.model().set_data(
+            data if data else [['', '']])
 
 
 class AddAccount(BaseWidget):
@@ -154,10 +129,7 @@ class AddAccount(BaseWidget):
 
     @QtCore.Slot()
     def add_account(self):
-        with Session() as session:
-            client = get_current_client(session)
-            client.accounts.append(Account(name=self.input_name.text()))
-            session.commit()
+        AccountRepository().add(self.input_name.text())
         self.message_box.setText(f'Conta {self.input_name.text()} Adicionada')
         self.message_box.show()
         self.close()
@@ -180,12 +152,7 @@ class RemoverConta(QtWidgets.QDialog):
 
     @QtCore.Slot()
     def remove_account(self):
-        with Session() as session:
-            account = session.query(Account).filter_by(
-                client_name=get_current_client(session).name
-            ).filter_by(name=self.account_name).first()
-            session.delete(account)
-            session.commit()
+        AccountRepository().delete(self.account_name)
         self.parent.message_box.setText(f'Conta {self.account_name} removida!')
         self.parent.message_box.show()
         self.parent.update_input_account_items()
