@@ -2,47 +2,60 @@ from datetime import datetime, date
 
 from models import AccountModel, TransactionModel, ClientModel
 from database import Session
-from domain import IAccountRepository, Transaction, Client
+from domain import IAccountRepository, Transaction, Client, Account
 
 
 class AccountRepository(IAccountRepository):
 
+    def all(self) -> list[Account]:
+        with Session() as session:
+            client = self.get_current_client(session)
+            return [Account(a.name) for a in client.accounts]
+
     def add(self, account_name: str) -> None:
         with Session() as session:
-            self.get_current_client().accounts.append(
+            client = self.get_current_client(session)
+            client.accounts.append(
                 AccountModel(name=account_name)
             )
             session.commit()
 
     def delete(self, account_name: str) -> None:
         with Session() as session:
-            m = session.query(TransactionModel).filter_by(
-                client_name=self.get_current_client().name, name=account_name
+            client = self.get_current_client(session)
+            m = session.query(AccountModel).filter_by(
+                client_name=client.name, name=account_name
             ).first()
             session.delete(m)
             session.commit()
 
     def make_transaction(self, account_name: str, value: float) -> None:
         with Session() as session:
+            client = self.get_current_client(session)
             account = session.query(AccountModel).filter_by(
-                client_name=self.get_current_client().name, name=account_name
+                client_name=client.name, name=account_name
             ).first()
             account.transactions.append(TransactionModel(value=value))
             session.commit()
 
     def get_transactions(self, account_name: str,
                          start_date: date = datetime.now().date(),
-                         end_date: date = datetime.now().date()) -> list[Transaction]:
+                         final_date: date = datetime.now().date()) -> list[Transaction]:
         with Session() as session:
-            models = session.query(TransactionModel).filter_by(
-                client_name=self.get_current_client().name,
-                account_name=account_name
-            ).filter(start_date <= TransactionModel.date <= end_date).all()
-            return [Transaction(m.id, m.date, m.value, m.source_of_income)
-                    for m in models]
+            client = self.get_current_client(session)
+            account = session.query(AccountModel).filter_by(
+                client_name=client.name, name=account_name
+            ).first()
+            result = []
+            for m in account.transactions:
+                if start_date <= m.date <= final_date:
+                    result.append(
+                        Transaction(
+                            id=m.id, date=m.date, value=m.value,
+                            source_of_income=m.source_of_income)
+                    )
+            return result
 
-    def get_current_client(self) -> Client:
-        with Session() as session:
-            with open('current_client.txt', 'r') as f:
-                model = session.query(ClientModel).get(f.readlines()[0])
-                return Client(model.name, model.password)
+    def get_current_client(self, session: Session) -> Client:
+        with open('current_client.txt', 'r') as f:
+            return session.query(ClientModel).get(f.readlines()[0])

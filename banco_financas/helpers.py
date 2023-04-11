@@ -1,7 +1,8 @@
 from PySide6 import QtWidgets, QtCore
 
 from database import Session
-from domain import get_current_client, get_action_widget
+from repositories import AccountRepository
+from domain import get_action_widget
 
 
 class Button(QtWidgets.QPushButton):
@@ -61,9 +62,8 @@ class ChooseAccount(BaseWidget):
 
     def update_input_account_items(self) -> None:
         self.input_account.clear()
-        with Session() as session:
-            self.input_account.addItems(
-                [a.name for a in get_current_client(session).accounts])
+        self.input_account.addItems(
+            [a.name for a in AccountRepository().all()])
 
     def show(self) -> None:
         self.update_input_account_items()

@@ -5,15 +5,13 @@ from datetime import datetime, date
 from dataclasses import dataclass
 from abc import ABC, abstractmethod
 
-from widgets import default
-
 
 @dataclass
 class Transaction:
     id: int
-    date: date = datetime.now().date()
     value: float
     source_of_income: str
+    date: date = datetime.now().date()
 
 
 @dataclass
@@ -34,6 +32,10 @@ class IAccountRepository(ABC):
         raise NotImplementedError()
 
     @abstractmethod
+    def delete(self, account_name: str) -> None:
+        raise NotImplementedError()
+
+    @abstractmethod
     def make_transaction(self, account_name: str, value: float) -> None:
         raise NotImplementedError()
 
@@ -48,11 +50,14 @@ def get_action_widget(account_name: str, action: str,
                       parent: QtWidgets.QWidget) -> QtWidgets.QWidget:
     try:
         module = import_module(f'widgets.{account_name.lower()}')
-        get_obj_from_module(module, action, account_name, parent)
+        obj = get_obj_from_module(module, action, account_name, parent)
+        if obj is None:
+            module = import_module('widgets.default')
+            return get_obj_from_module(module, action, account_name, parent)
+        return obj
     except ModuleNotFoundError:
-        pass
-    module = import_module('widgets.default')
-    get_obj_from_module(module, action, account_name, parent)
+        module = import_module('widgets.default')
+        return get_obj_from_module(module, action, account_name, parent)
 
 
 def get_obj_from_module(module, action: str, account_name: str,

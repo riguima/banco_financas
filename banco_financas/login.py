@@ -1,6 +1,7 @@
 from PySide6 import QtWidgets, QtCore
 
 from database import Session
+from models import ClientModel
 from domain import Client
 from helpers import HLayout, Button
 from main_window import MainWindow
@@ -40,7 +41,7 @@ class Login(QtWidgets.QWidget):
     @QtCore.Slot()
     def make_login(self):
         with Session() as session:
-            client = session.query(Client).get(self.input_name.text())
+            client = session.query(ClientModel).get(self.input_name.text())
             if client and client.password == self.input_password.text():
                 self.show_main_window()
             else:
@@ -50,12 +51,12 @@ class Login(QtWidgets.QWidget):
     @QtCore.Slot()
     def register(self):
         with Session() as session:
-            client = session.query(Client).get(self.input_name.text())
+            client = session.query(ClientModel).get(self.input_name.text())
             if client:
                 self.message_box.setText('Usuário já cadastrado!')
                 self.message_box.show()
             else:
-                client = Client(name=self.input_name.text(),
+                client = ClientModel(name=self.input_name.text(),
                                 password=self.input_password.text())
                 session.add(client)
                 session.commit()

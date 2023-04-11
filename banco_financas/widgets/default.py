@@ -2,7 +2,6 @@ from PySide6 import QtWidgets, QtGui, QtCore
 from datetime import datetime
 
 from repositories import AccountRepository
-from database import Session
 from helpers import HLayout, Button, BaseWidget
 
 
@@ -49,9 +48,6 @@ class ExtractModel(QtCore.QAbstractTableModel):
         if role == QtCore.Qt.ItemDataRole.DisplayRole:
             return self._data[index.row()][index.column()]
 
-    def set_data(self, data):
-        self._data = data
-
     def headerData(self, section, orientation, role):
         if orientation == QtCore.Qt.Orientation.Horizontal and role == QtCore.Qt.ItemDataRole.DisplayRole:
             return self._header[section]
@@ -84,8 +80,8 @@ class VerExtrato(BaseWidget):
                                          self.input_final_date)
 
         self.transactions_table = QtWidgets.QTableView()
-        self.transactions_table.setModel(
-            ExtractModel([['', '']], ['Valor', 'Data']))
+        self.transactions_table.setModel(ExtractModel([['', '']],
+                                                      ['Valor', 'Data']))
         self.transactions_table.setColumnWidth(0, 200)
         self.transactions_table.setColumnWidth(1, 152)
 
@@ -107,8 +103,9 @@ class VerExtrato(BaseWidget):
         for t in transactions:
             data.append([f'R${t.value:.2f}'.replace('.', ','),
                          datetime.strftime(t.date, '%d/%m/%Y')])
-        self.transactions_table.model().set_data(
-            data if data else [['', '']])
+        if not data:
+            data = [['', '']]
+        self.transactions_table.setModel(ExtractModel(data, ['Valor', 'Data']))
 
 
 class AddAccount(BaseWidget):
