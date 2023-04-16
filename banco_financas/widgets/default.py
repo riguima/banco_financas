@@ -37,6 +37,38 @@ class AdicionarDinheiro(BaseWidget):
         self.close()
 
 
+class RemoverDinheiro(BaseWidget):
+
+    def __init__(self, account_name: str, parent: QtWidgets.QWidget):
+        super().__init__()
+        self.parent = parent
+        self.account_name = account_name
+        self.setFixedSize(250, 150)
+        self.message_box = QtWidgets.QMessageBox()
+
+        self.value_text = QtWidgets.QLabel('Valor')
+        self.input_value = QtWidgets.QLineEdit()
+        self.input_value.setValidator(QtGui.QDoubleValidator())
+        self.input_value_layout = HLayout(self.value_text, self.input_value)
+
+        self.button = Button('Remover dinheiro')
+        self.button.clicked.connect(self.remove_money)
+
+        self.layout.addLayout(self.input_value_layout)
+        self.layout.addWidget(self.button)
+
+    @QtCore.Slot()
+    def remove_money(self):
+        AccountRepository().make_transaction(
+            self.account_name,
+            value=-float(self.input_value.text().replace(',', '.')),
+        )
+        self.message_box.setText(
+            f'Valor de R${self.input_value.text()} removido da conta!')
+        self.message_box.show()
+        self.close()
+
+
 class ExtractModel(QtCore.QAbstractTableModel):
 
     def __init__(self, data, header):
@@ -65,7 +97,7 @@ class VerExtrato(BaseWidget):
         super().__init__()
         self.parent = parent
         self.account_name = account_name
-        self.setFixedSize(380, 500)
+        self.setFixedSize(420, 500)
 
         self.label_start_date = QtWidgets.QLabel('Data inicial')
         self.input_start_date = QtWidgets.QDateEdit()
@@ -80,10 +112,11 @@ class VerExtrato(BaseWidget):
                                          self.input_final_date)
 
         self.transactions_table = QtWidgets.QTableView()
-        self.transactions_table.setModel(ExtractModel([['', '']],
-                                                      ['Valor', 'Data']))
-        self.transactions_table.setColumnWidth(0, 200)
-        self.transactions_table.setColumnWidth(1, 152)
+        self.transactions_table.setModel(ExtractModel([['', '', '']],
+                                                      ['ID', 'Valor', 'Data']))
+        self.transactions_table.setColumnWidth(0, 50)
+        self.transactions_table.setColumnWidth(1, 200)
+        self.transactions_table.setColumnWidth(2, 152)
 
         self.button_show_extract = Button('Mostrar extrato')
         self.button_show_extract.clicked.connect(self.show_extract)
@@ -101,11 +134,12 @@ class VerExtrato(BaseWidget):
         )
         data = []
         for t in transactions:
-            data.append([f'R${t.value:.2f}'.replace('.', ','),
+            data.append([str(t.id), f'R${t.value:.2f}'.replace('.', ','),
                          datetime.strftime(t.date, '%d/%m/%Y')])
         if not data:
-            data = [['', '']]
-        self.transactions_table.setModel(ExtractModel(data, ['Valor', 'Data']))
+            data = [['', '', '']]
+        self.transactions_table.setModel(ExtractModel(data,
+                                                      ['ID', 'Valor', 'Data']))
 
 
 class AddAccount(BaseWidget):
@@ -154,3 +188,27 @@ class RemoverConta(QtWidgets.QDialog):
         self.parent.message_box.show()
         self.parent.update_input_account_items()
         self.close()
+
+
+class RemoveTransaction(BaseWidget):
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.setFixedSize(250, 150)
+        self.message_box = QtWidgets.QMessageBox()
+        self.id_text = QtWidgets.QLabel('ID')
+        self.input_id = QtWidgets.QLineEdit()
+        self.input_id.setValidator(QtGui.QIntValidator())
+        self.input_id_layout = HLayout(self.id_text, self.input_id)
+
+        self.button = Button('Remover Transação')
+        self.button.clicked.connect(self.remove_transaction)
+
+        self.layout.addLayout(self.input_id_layout)
+        self.layout.addWidget(self.button)
+
+    @QtCore.Slot()
+    def remove_transaction(self) -> None:
+        AccountRepository().delete_transaction(int(self.input_id.text()))
+        self.message_box.setText('Transação removida!')
+        self.message_box.show()

@@ -29,13 +29,22 @@ class AccountRepository(IAccountRepository):
             session.delete(m)
             session.commit()
 
+    def delete_transaction(self, transaction_id: int) -> None:
+        with Session() as session:
+            transaction = session.query(TransactionModel).get(transaction_id)
+            if transaction:
+                session.delete(transaction)
+                session.commit()
+
     def make_transaction(self, account_name: str, value: float) -> None:
         with Session() as session:
             client = self.get_current_client(session)
             account = session.query(AccountModel).filter_by(
                 client_name=client.name, name=account_name
             ).first()
-            account.transactions.append(TransactionModel(value=value))
+            transaction = TransactionModel(
+                value=value, account=account, client=client)
+            session.add(transaction)
             session.commit()
 
     def get_transactions(self, account_name: str,

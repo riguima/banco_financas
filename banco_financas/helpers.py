@@ -1,6 +1,5 @@
 from PySide6 import QtWidgets, QtCore
 
-from database import Session
 from repositories import AccountRepository
 from domain import get_action_widget
 
@@ -50,7 +49,7 @@ class ChooseAccount(BaseWidget):
         self.action_text = QtWidgets.QLabel('Acão')
         self.input_action = QtWidgets.QComboBox()
         self.input_action.addItems(['Ver extrato', 'Adicionar dinheiro',
-                                    'Remover conta'])
+                                    'Remover dinheiro', 'Remover conta'])
         self.input_action_layout = HLayout(self.action_text, self.input_action)
 
         self.action_button = Button('Fazer ação')
