@@ -1,7 +1,8 @@
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, Mapped, mapped_column
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy import Column, Integer, String, DateTime, Float, ForeignKey
+from sqlalchemy import String, ForeignKey
 from datetime import datetime
+from typing import List, Optional
 
 from database import db
 
@@ -11,32 +12,38 @@ Base = declarative_base()
 
 class ClientModel(Base):
     __tablename__ = 'clients'
-    name = Column(String, primary_key=True, nullable=False)
-    password = Column(String, nullable=False)
-    accounts = relationship('AccountModel', lazy=True, back_populates='client')
-    transactions = relationship('TransactionModel', lazy=True,
-                                back_populates='client')
+    name: Mapped[str] = mapped_column(String(100), primary_key=True)
+    password: Mapped[str] = mapped_column(String(100))
+    accounts: Mapped[List['AccountModel']] = relationship(
+        back_populates='client', cascade='all, delete-orphan')
+    transactions: Mapped[List['TransactionModel']] = relationship(
+        back_populates='client', cascade='all, delete-orphan')
 
 
 class AccountModel(Base):
     __tablename__ = 'accounts'
-    id = Column(Integer, primary_key=True, nullable=False)
-    name = Column(String, nullable=False)
-    client_name = Column(String, ForeignKey('clients.name'))
-    client = relationship('ClientModel', back_populates='accounts')
-    transactions = relationship('TransactionModel', back_populates='account')
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String(100))
+    client_name: Mapped[str] = mapped_column(String(100),
+                                             ForeignKey('clients.name'))
+    client: Mapped['ClientModel'] = relationship(back_populates='accounts')
+    transactions: Mapped[List['TransactionModel']] = relationship(
+        back_populates='account', cascade='all, delete-orphan')
 
 
 class TransactionModel(Base):
     __tablename__ = 'transactions'
-    id = Column(Integer, primary_key=True, nullable=False)
-    date = Column(DateTime, default=datetime.now())
-    value = Column(Float, nullable=False)
-    client_name = Column(String, ForeignKey('clients.name'))
-    client = relationship('ClientModel', back_populates='transactions')
-    account_name = Column(String, ForeignKey('accounts.name'))
-    account = relationship('AccountModel', back_populates='transactions')
-    source_of_income = Column(String, nullable=True)
+    id: Mapped[int] = mapped_column(primary_key=True)
+    date: Mapped[datetime] = mapped_column(default=datetime.now())
+    value: Mapped[float] = mapped_column()
+    client_name: Mapped[str] = mapped_column(String(100),
+                                             ForeignKey('clients.name'))
+    client: Mapped['ClientModel'] = relationship(back_populates='transactions')
+    account_name: Mapped[str] = mapped_column(String(100),
+                                              ForeignKey('accounts.name'))
+    account: Mapped['AccountModel'] = relationship(
+        back_populates='transactions')
+    source_of_income: Mapped[Optional[str]] = mapped_column(String(100))
 
 
 Base.metadata.create_all(db)
