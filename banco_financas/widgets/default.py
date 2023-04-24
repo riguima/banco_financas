@@ -16,7 +16,8 @@ class AdicionarDinheiro(BaseWidget):
 
         self.value_text = QtWidgets.QLabel('Valor')
         self.input_value = QtWidgets.QLineEdit()
-        self.input_value.setValidator(QtGui.QDoubleValidator())
+        regex = QtCore.QRegularExpression(r'[0-9]+,[0-9]{1,2}')
+        self.input_value.setValidator(QtGui.QRegularExpressionValidator(regex))
         self.input_value_layout = HLayout(self.value_text, self.input_value)
 
         self.button = Button('Adicionar dinheiro')
@@ -48,7 +49,8 @@ class RemoverDinheiro(BaseWidget):
 
         self.value_text = QtWidgets.QLabel('Valor')
         self.input_value = QtWidgets.QLineEdit()
-        self.input_value.setValidator(QtGui.QDoubleValidator())
+        regex = QtCore.QRegularExpression(r'[0-9]+,[0-9]{1,2}')
+        self.input_value.setValidator(QtGui.QRegularExpressionValidator(regex))
         self.input_value_layout = HLayout(self.value_text, self.input_value)
 
         self.button = Button('Remover dinheiro')
@@ -102,17 +104,26 @@ class VerExtrato(BaseWidget):
         self.label_start_date = QtWidgets.QLabel('Data inicial')
         self.input_start_date = QtWidgets.QDateEdit()
         self.input_start_date.setDisplayFormat('dd/MM/yyyy')
+        self.input_start_date.setDate(datetime.now().date())
         self.layout_start_date = HLayout(self.label_start_date,
                                          self.input_start_date)
 
         self.label_final_date = QtWidgets.QLabel('Data final')
         self.input_final_date = QtWidgets.QDateEdit()
         self.input_final_date.setDisplayFormat('dd/MM/yyyy')
+        self.input_final_date.setDate(datetime.now().date())
         self.layout_final_date = HLayout(self.label_final_date,
                                          self.input_final_date)
 
         self.transactions_table = QtWidgets.QTableView()
-        self.transactions_table.setModel(ExtractModel([['', '', '']],
+        transactions = AccountRepository().get_all_transactions(self.account_name)[:10]
+        data = []
+        for t in transactions:
+            data.append([str(t.id), f'R${t.value:.2f}'.replace('.', ','),
+                         datetime.strftime(t.date, '%d/%m/%Y')])
+        if not data:
+            data = [['', '', '']]
+        self.transactions_table.setModel(ExtractModel(data,
                                                       ['ID', 'Valor', 'Data']))
         self.transactions_table.setColumnWidth(0, 50)
         self.transactions_table.setColumnWidth(1, 200)
@@ -128,7 +139,7 @@ class VerExtrato(BaseWidget):
 
     @QtCore.Slot()
     def show_extract(self) -> None:
-        transactions = AccountRepository().get_transactions(
+        transactions = AccountRepository().get_transactions_per_date(
             self.account_name, self.input_start_date.date(),
             self.input_final_date.date()
         )

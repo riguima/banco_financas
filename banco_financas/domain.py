@@ -40,9 +40,14 @@ class IAccountRepository(ABC):
         raise NotImplementedError()
 
     @abstractmethod
-    def get_transactions(self, account_name: str,
-                         start_date: date = datetime.now().date(),
-                         final_date: date = datetime.now().date()) -> list[Transaction]:
+    def get_all_transactions(self, account_name: str) -> list[Transaction]:
+        raise NotImplementedError()
+
+    @abstractmethod
+    def get_transactions_per_date(self, account_name: str,
+                                  start_date: date = datetime.now().date(),
+                                  final_date: date = datetime.now().date()
+                                  ) -> list[Transaction]:
         raise NotImplementedError()
 
 

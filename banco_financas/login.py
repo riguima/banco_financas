@@ -12,7 +12,7 @@ class Login(QtWidgets.QWidget):
     def __init__(self) -> None:
         super().__init__()
         self.setStyleSheet('font-size: 20px')
-        self.setFixedSize(300, 250)
+        self.setFixedSize(300, 200)
         self.main_window = MainWindow()
         self.message_box = QtWidgets.QMessageBox()
 

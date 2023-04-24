@@ -47,7 +47,7 @@ class AccountRepository(IAccountRepository):
             session.add(transaction)
             session.commit()
 
-    def get_transactions(self, account_name: str,
+    def get_transactions_per_date(self, account_name: str,
                          start_date: date = datetime.now().date(),
                          final_date: date = datetime.now().date()) -> list[Transaction]:
         with Session() as session:
@@ -63,6 +63,21 @@ class AccountRepository(IAccountRepository):
                             id=m.id, date=m.date, value=m.value,
                             source_of_income=m.source_of_income)
                     )
+            return result
+
+    def get_all_transactions(self, account_name: str) -> list[Transaction]:
+        with Session() as session:
+            client = self.get_current_client(session)
+            account = session.query(AccountModel).filter_by(
+                client_name=client.name, name=account_name
+            ).first()
+            result = []
+            for m in account.transactions:
+                result.append(
+                    Transaction(
+                        id=m.id, date=m.date, value=m.value,
+                        source_of_income=m.source_of_income)
+                )
             return result
 
     def get_current_client(self, session: Session) -> Client:
